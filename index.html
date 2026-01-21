@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام التحذير الأمني</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:#00ff9c;font-family:Tahoma,Arial;overflow:hidden}
+.bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+   radial-gradient(ellipse at center, rgba(0,255,156,.08), transparent 55%),
+   repeating-linear-gradient(0deg, rgba(0,255,156,.06) 0 1px, transparent 1px 3px);
+  animation:flicker 6s infinite;
+}
+@keyframes flicker{0%,100%{opacity:.9}50%{opacity:.75}}
+.wrap{position:relative;z-index:2;height:100%;display:flex;align-items:center;justify-content:center}
+.panel{
+  width:min(780px,94vw);background:rgba(0,0,0,.82);
+  border:1px solid #00ff9c;border-radius:10px;
+  box-shadow:0 0 35px rgba(0,255,156,.35);padding:22px
+}
+h1{margin:0 0 10px;color:#7cffcf}
+p{line-height:1.7}
+input,button{
+  width:100%;padding:12px;margin:8px 0;border-radius:6px;
+  background:#000;border:1px solid #00ff9c;color:#00ff9c;font-size:16px
+}
+button{cursor:pointer}
+button:hover{background:#003a26}
+.console{
+  background:#000;border:1px dashed #00ff9c;border-radius:6px;
+  padding:10px;height:180px;overflow:auto;font-size:14px
+}
+.timer{font-size:26px;text-align:center;color:#ff5c5c;margin:12px 0}
+.hidden{display:none}
+.lock{
+  position:fixed;inset:0;z-index:3;background:#000;
+  display:flex;align-items:center;justify-content:center;flex-direction:column
+}
+.lock h2{color:#ff5c5c;font-size:34px;margin:10px 0}
+.lock p{color:#7cffcf}
+.footer{
+  position:fixed;left:0;right:0;bottom:0;z-index:4;
+  background:#000;border-top:1px solid #00ff9c;text-align:center;
+  padding:10px;color:#7cffcf;font-weight:bold
+}
+.glow{animation:glow 1.2s infinite}
+@keyframes glow{0%{text-shadow:0 0 6px}50%{text-shadow:0 0 18px}100%{text-shadow:0 0 6px}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+
+<div class="wrap">
+  <div class="panel">
+    <h1 class="glow">نظام التحذير الأمني — واتساب</h1>
+    <p>فحص سلوكي وتحذير من محاولات التصيّد والروابط الضارة.</p>
+
+    <div id="s1">
+      <p>أدخل رقم واتساب:</p>
+      <input id="phone" placeholder="+20XXXXXXXXXX">
+      <button onclick="start()">بدء الإجراء</button>
+    </div>
+
+    <div id="s2" class="hidden">
+      <p>تنفيذ خطوات الإجراء…</p>
+      <div class="console" id="c"></div>
+      <div class="timer" id="t">15:00</div>
+      <p style="text-align:center;color:#ff5c5c">سيتم إغلاق واتساب عند انتهاء العدّاد</p>
+    </div>
+  </div>
+</div>
+
+<div id="lock" class="lock hidden">
+  <h2>تم الإغلاق</h2>
+  <p>تم تنفيذ الإجراء</p>
+</div>
+
+<div class="footer">إخلاء مسؤولية النجم</div>
+
+<script>
+// صوت زنة/تحذير
+let AC;
+function beep(f=880,d=.12){
+  if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+  const o=AC.createOscillator(), g=AC.createGain();
+  o.type="square"; o.frequency.value=f;
+  o.connect(g); g.connect(AC.destination);
+  g.gain.value=.0001; o.start();
+  g.gain.exponentialRampToValueAtTime(.2,AC.currentTime+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);
+  o.stop(AC.currentTime+d);
+}
+const log=(m)=>{const c=document.getElementById('c'); c.innerHTML+=m+"<br>"; c.scrollTop=c.scrollHeight;}
+
+let total=15*60, iv;
+function start(){
+  const v=document.getElementById('phone').value.trim();
+  if(!v){alert("أدخل الرقم");return}
+  document.getElementById('s1').classList.add('hidden');
+  document.getElementById('s2').classList.remove('hidden');
+
+  beep(); log("تهيئة الإجراء للرقم: "+v);
+  setTimeout(()=>{beep(660);log("تحليل الجلسات…");},700);
+  setTimeout(()=>{beep(520);log("تعطيل الوصول…");},1400);
+  setTimeout(()=>{beep(420);log("قفل القناة…");},2100);
+
+  iv=setInterval(()=>{
+    total--;
+    const m=String(Math.floor(total/60)).padStart(2,'0');
+    const s=String(total%60).padStart(2,'0');
+    document.getElementById('t').textContent=`${m}:${s}`;
+    beep(1200,.04);
+    if(total<=0){
+      clearInterval(iv);
+      document.getElementById('lock').classList.remove('hidden');
+      beep(300,.6);
+      history.pushState(null,"","#locked");
+      window.onpopstate=()=>history.go(1);
+    }
+  },1000);
+}
+</script>
+</body>
+</html>
